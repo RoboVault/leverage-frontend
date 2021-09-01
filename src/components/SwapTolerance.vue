@@ -1,25 +1,43 @@
 <script setup>
-import { nextTick, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 
 const props = defineProps({
   modelValue: String | Number,
 });
 
+const DEFAULT_USER_INPUT = JSON.parse(
+  localStorage.getItem("user-entered-swap-tolerance") ?? "0.8"
+);
+
 const emits = defineEmits(["update:modelValue"]);
 
-const picked = ref(0);
-const customValue = ref("custom");
+const picked = ref(props.modelValue);
+const userInput = ref(DEFAULT_USER_INPUT);
+const customValue = ref(`c_${DEFAULT_USER_INPUT}`);
+const isCustom = computed(() => `c_${picked.value}` === customValue.value);
 
 function update() {
+  localStorage.setItem("user-picked-swap-tolerance", picked.value);
   emits("update:modelValue", picked.value);
-  console.log(picked);
+}
+
+function selectCustom() {
+  const number = Number(`c_${userInput.value}`.replace("c_", ""));
+  picked.value = number;
+  update();
 }
 
 function updateCustom() {
-  let number = Math.floor(Math.random() * 10);
-  customValue.value = `c_${number}`; // component internally requires a unique key
-  picked.value = customValue.value;
-  emits("update:modelValue", number); // emit the actual desired number without interfereing with radio state
+  if (userInput.value) {
+    userInput.value = Math.min(
+      100,
+      Math.max(0, Math.round(userInput.value * 10) / 10)
+    );
+  }
+  localStorage.setItem("user-entered-swap-tolerance", userInput.value);
+  customValue.value = `c_${userInput.value}`;
+  picked.value = userInput.value;
+  update();
 }
 </script>
 
@@ -118,15 +136,48 @@ function updateCustom() {
       />
       5%
     </label>
-    <label class="bg-purple-900 px-2 py-1 rounded-full cursor-pointer">
+    <label
+      class="border-2 bg-purple-900 px-2 py-1 rounded-full cursor-pointer"
+      :class="isCustom ? 'border-purple-500' : 'border-purple-900'"
+    >
       <input
         type="radio"
         :value="customValue"
         v-model="picked"
-        @change="updateCustom"
+        @change="selectCustom"
         class="hidden"
       />
       Custom
     </label>
   </div>
+  <transition name="fade">
+    <div class="overflow-y-hiden">
+      <input
+        v-if="isCustom"
+        type="number"
+        class="w-full p-2 rounded bg-purp-mid mt-4"
+        min="0"
+        max="100"
+        step="0.1"
+        v-model="userInput"
+        @input="updateCustom"
+      />
+    </div>
+  </transition>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 5s ease;
+  max-height: 25px;
+  height: 25px;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  /* opacity: 0; */
+  max-height: 0;
+  height: 0;
+}
+</style>
