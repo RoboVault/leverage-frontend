@@ -7,6 +7,7 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "ethers": "^5.4.6",
     "vue": "^3.2.6"
   },
   "devDependencies": {

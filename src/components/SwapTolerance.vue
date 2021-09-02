@@ -42,7 +42,7 @@ function updateCustom() {
 </script>
 
 <template>
-  <p class="py-4">Swap Tolerance</p>
+  <p class="py-4">Slippage</p>
   <div class="flex justify-between gap-2">
     <label
       class="
