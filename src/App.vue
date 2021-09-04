@@ -1,50 +1,66 @@
 <script setup>
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
-import { ref } from "@vue/reactivity";
+import { reactive, ref } from "@vue/reactivity";
 import SwapTolerance from "./components/SwapTolerance.vue";
 import LeverageLoops from "./components/LeverageLoops.vue";
 import StatsPanel from "./components/StatsPanel.vue";
 import { ethers, Contract } from "ethers";
 
 import { useAccount } from "./hooks/account";
+import { useLeverage } from "./hooks/leverage";
 
-const { connect, connected, account } = useAccount();
+const { connect, connected, disconnect, account, getProvider, getSigner } =
+  useAccount();
+
+const { initialisePosition, getPositionAddress, positionAddress } = useLeverage(
+  {
+    account,
+    getProvider,
+    getSigner,
+  }
+);
 
 const swapTolerance = ref(
   JSON.parse(localStorage.getItem("user-picked-swap-tolerance") ?? "1")
 );
 const leverageLoops = ref(1);
-const positionAddress = ref("");
 const usdcBalance = ref(0);
-async function initializePosition() {
-  let provider = new ethers.providers.Web3Provider(window.ethereum);
+const tokenAmount = ref(0);
 
-  const usdcContract = new Contract(
-    "0x04068da6c83afcfa0e13ba15a6696662335d5b75",
-    ["function balanceOf(address owner) view returns (uint balance)"],
-    provider
-  );
-  const leveragerContract = new Contract(
-    "0x8Cb11D692bdC1720B3e346c856BA74201bAb38Bc",
-    ["function initializePosition() returns (address)"],
-    provider.getSigner()
-  );
+async function logout() {
+  disconnect();
+  leverageLoops.value = 1;
+  usdcBalance.value = 0;
+  tokenAmount.value = 0;
+}
 
-  // get usdc balance
-  usdcBalance.value = Number(await usdcContract.balanceOf(account.value)) / 1e6;
-  console.log({ usdcBalance: usdcBalance.value });
+async function login() {
+  await connect();
+  try {
+    await getPositionAddress();
+  } catch {}
+}
 
-  // this fails with metamask internal JSON-RPC error -32603
-  positionAddress.value = await leveragerContract.initializePosition();
-  console.log({ positionAddress: positionAddress.value });
+async function initialise() {
+  await connect();
+  try {
+    await getPositionAddress();
+  } catch {
+    await initialisePosition();
+    await getPositionAddress();
+  }
+}
+
+if (account.value) {
+  initialise();
 }
 </script>
 
 <template>
   <transition name="component-fade" mode="out-in">
     <div class="bg-purp-dark rounded shadow-xl p-8" v-if="connected">
-      <p class="text-xs pb-2">{{ account }}</p>
+      <p class="text-xs pb-2 cursor-pointer" @click="logout">{{ account }}</p>
       <h1 class="text-lg font-bold">Change Leverage</h1>
 
       <SwapTolerance v-model="swapTolerance" />
@@ -63,11 +79,11 @@ async function initializePosition() {
           class="bg-purple-500 px-4 py-2 mt-6 rounded-full"
           @click="initializePosition"
         >
-          Initialize Position
+          Create Position
         </button>
       </template>
     </div>
-    <button class="bg-purple-500 p-4 rounded-full" v-else @click="connect">
+    <button class="bg-purple-500 p-4 rounded-full" v-else @click="login">
       Connect Wallet
     </button>
   </transition>
