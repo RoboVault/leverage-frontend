@@ -14,7 +14,7 @@ import { usePosition } from "./hooks/position";
 const { connect, connected, disconnect, account, getProvider, getSigner } =
   useAccount();
 
-const { initialisePosition, getPositionAddress, positionAddress } = useLeverage(
+const { initialisePosition, getPositionAddress, positionAddress, getPositionInfo } = useLeverage(
   {
     account,
     getProvider,
@@ -53,6 +53,7 @@ async function initialise() {
     await initialisePosition();
     await getPositionAddress();
   }
+  console.log(await getPositionInfo(5))
 }
 
 async function deposit() {

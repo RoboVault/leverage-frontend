@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { ethers, Contract } from "ethers";
+import leveragerAbi from './leverager-abi.json'
 
 export function useLeverage({ account, getProvider, getSigner }) {
   let usdcContract = null;
@@ -19,12 +20,7 @@ export function useLeverage({ account, getProvider, getSigner }) {
     if (!leveragerContract) {
       leveragerContract = new Contract(
         "0x8Cb11D692bdC1720B3e346c856BA74201bAb38Bc",
-        [
-          "function initialisePosition() returns (address)",
-          "function getPositionAddress(address addr) view returns (address)",
-          "function maxLeverageWithLoops(uint256 _nLoops, uint256 _slippage) view returns (uint256)",
-          // "function getPositionInfo(uint256 _nLoops, uint256 _slippage, uint256 _collatRatio) view returns (PositionInfo memory)",
-        ],
+        leveragerAbi,
         getSigner()
       );
     }
@@ -59,9 +55,23 @@ export function useLeverage({ account, getProvider, getSigner }) {
     localStorage.setItem("position", positionAddress.value);
   }
 
+  async function getPositionInfo(loops, slippage = 1, collatRatio = 70) {
+    console.log({
+      loops: loops.toString(),
+      slippage: (slippage * 10 ** 16).toString(),
+      collatRatio: (collatRatio * 10 ** 16).toString(),
+    });
+    return await getLeveragerContract().getPositionInfo(
+      loops.toString(),
+      (slippage * 10 ** 16).toString(),
+      (collatRatio * 10 ** 16).toString()
+    );
+  }
+
   return {
     initialisePosition,
     getPositionAddress,
+    getPositionInfo,
     positionAddress,
   };
 }
