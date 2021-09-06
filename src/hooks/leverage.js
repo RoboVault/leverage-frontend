@@ -32,26 +32,39 @@ export function useLeverage({
     return getPositionAddress();
   }
 
-  async function getPositionAddress() {
-    positionAddress.value = await getLeveragerContract().getPositionAddress(
-      account.value
-    );
-    localStorage.setItem("position", positionAddress.value);
+  function setPositionAddress(addr) {
+    positionAddress.value = addr;
+    if (addr) {
+      localStorage.setItem("position", addr);
+    } else {
+      localStorage.removeItem("position");
+    }
   }
 
-  function getPositionInfo() {
+  async function getPositionAddress() {
+    const addr = await getLeveragerContract().getPositionAddress(account.value);
+    setPositionAddress(addr);
+  }
+
+  function getPositionInfo(_loops = null, _slippage = null) {
     return getLeveragerContract().getPositionInfo(
-      loops.value,
-      slippage.value,
+      _loops ?? loops.value,
+      _slippage ?? slippage.value,
       collatRatio.value
     );
+  }
+
+  function maxLeverageWithLoops(loops, slippage) {
+    return getLeveragerContract().maxLeverageWithLoops(loops, slippage);
   }
 
   return {
     initialisePosition,
     getPositionAddress,
+    setPositionAddress,
     getPositionInfo,
     positionAddress,
     getPositionInfo,
+    maxLeverageWithLoops,
   };
 }

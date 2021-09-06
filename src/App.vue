@@ -5,7 +5,7 @@ import StatsPanel from "./components/StatsPanel.vue";
 
 import { useRoboVault } from "./hooks/robovault";
 import { currency } from "./utils/formatters";
-import { inject } from "vue";
+import { computed, inject, reactive, watch } from "vue";
 
 const {
   // Auth
@@ -23,6 +23,7 @@ const {
   account,
   tokenAmount,
   stats,
+  estimate,
 
   // position
   positionAddress,
@@ -42,7 +43,11 @@ const {
 
       <SwapTolerance v-model="slippage" />
       <LeverageLoops v-model="loops" />
-      <StatsPanel :stats="stats" />
+      <StatsPanel
+        :stats="stats"
+        :position="positionAddress"
+        :estimate="estimate"
+      />
 
       <template v-if="positionAddress">
         <p class="my-4">Position: {{ positionAddress }}</p>

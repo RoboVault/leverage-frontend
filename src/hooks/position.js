@@ -28,9 +28,12 @@ export function usePosition({
       (collatRatio.value * 10 ** 16).toString()
     );
   }
-  function closeLong() {
-    return getPositionContract().closeAndWithdraw(slippage.value, loops.value);
-    // return getPositionContract().close(slippage.value, loops.value);
+  function closeLong(slippage = slippage.value, loops = loops.value) {
+    console.log((slippage * 10 ** 16).toString(), loops.toString());
+    return getPositionContract().closeAndWithdraw(
+      (slippage * 10 ** 16).toString(),
+      loops.toString()
+    );
   }
   function getCollateral() {
     return getPositionContract().getCollateral();
@@ -53,7 +56,7 @@ export function usePosition({
   function depositCollateral(amount) {
     return getPositionContract().depositCollateral(
       (amount * 1e6).toString(),
-      slippage.value
+      (slippage.value * 10 ** 16).toString()
     );
   }
 

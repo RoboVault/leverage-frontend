@@ -2,11 +2,13 @@
 import { currency, number } from "../utils/formatters";
 const props = defineProps({
   stats: Object,
+  estimate: Object,
+  position: String,
 });
 </script>
 
 <template>
-  <ul class="pt-4 flex flex-col gap-4">
+  <ul class="pt-4 flex flex-col gap-4" v-if="position">
     <li class="flex justify-between">
       <div>Expected MIM amount</div>
       <div>~ 0.0000</div>
@@ -35,6 +37,23 @@ const props = defineProps({
     <li class="flex justify-between">
       <div>Current Collateral</div>
       <div>~ {{ currency(props.stats.collateral) }}</div>
+    </li>
+  </ul>
+  <!-- No Position Created Yet -->
+  <ul v-else>
+    <li class="flex justify-between">
+      <div>Leverage</div>
+      <div>~ {{ currency(props.estimate.leverage) }}</div>
+    </li>
+
+    <li class="flex justify-between">
+      <div>Liquidation Price</div>
+      <div>~ {{ currency(props.estimate.liquidationPrice) }}</div>
+    </li>
+
+    <li class="flex justify-between">
+      <div>Max Leverage</div>
+      <div>~ {{ currency(props.estimate.maxLeverage) }}</div>
     </li>
   </ul>
 </template>

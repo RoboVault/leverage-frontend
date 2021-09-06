@@ -26,8 +26,18 @@ export function useRoboVault({ toast }) {
     }
   );
 
+  const estimate = reactive({
+    leverage: null,
+    liquidationPrice: null,
+    maxLeverage: null,
+  });
+
   watch(stats, (newStats) => {
     localStorage.setItem("position-stats", JSON.stringify(newStats));
+  });
+
+  watch([loops, slippage], ([loops, slippage]) => {
+    updateEstimate(loops, slippage);
   });
 
   const {
@@ -38,13 +48,17 @@ export function useRoboVault({ toast }) {
     getProvider,
     getSigner,
     getUsdcBalance,
+    approveUSDC,
+    allowanceUSDC,
   } = useAccount();
 
   const {
     initialisePosition,
     getPositionAddress,
+    setPositionAddress,
     positionAddress,
     getPositionInfo,
+    maxLeverageWithLoops,
   } = useLeverage({
     account,
     getProvider,
@@ -77,6 +91,7 @@ export function useRoboVault({ toast }) {
     disconnect();
     loops.value = 1;
     tokenAmount.value = 0;
+    setPositionAddress(null);
     clearStats();
     toast.info("Disconnected");
   }
@@ -88,7 +103,13 @@ export function useRoboVault({ toast }) {
       await beginStatsInterval();
       toast.info("Position Restored");
     } catch {
+      updateEstimate(loops.value, slippage.value);
       toast.info("Connected");
+    } finally {
+      ethereum.on("accountsChanged", () => {
+        logout();
+        login();
+      });
     }
   }
   async function initialise() {
@@ -104,6 +125,7 @@ export function useRoboVault({ toast }) {
   }
 
   function beginStatsInterval() {
+    clearInterval(statsInterval.value);
     statsInterval.value = setInterval(getStats, 5000);
     return getStats();
   }
@@ -145,6 +167,15 @@ export function useRoboVault({ toast }) {
   }
   async function open() {
     try {
+      const allowance = (await allowanceUSDC(positionAddress.value)) / 1e6;
+      if (allowance < tokenAmount.value) {
+        const approvalTx = await approveUSDC(
+          positionAddress.value,
+          tokenAmount.value
+        );
+        await approvalTx.wait();
+      }
+
       const tx = await openLong(tokenAmount.value, loops.value, slippage.value);
       console.log({ tx });
       const { dismiss } = toast.success("Opening Position", {
@@ -189,8 +220,9 @@ export function useRoboVault({ toast }) {
     }
   }
   async function close() {
+    console.log("closing with 10 loops");
     try {
-      const ts = await closeLong(slippage.value, loops.value);
+      const tx = await closeLong(slippage.value, 10);
       console.log({ tx });
       const { dismiss } = toast.success("Closing Position", {
         onClick() {
@@ -211,8 +243,31 @@ export function useRoboVault({ toast }) {
     }
   }
 
+  async function getEstimate(loops, slippage) {
+    const [{ levereage, liquidationPrice }, maxLeverage] = await Promise.all([
+      getPositionInfo(loops, slippage),
+      maxLeverageWithLoops(loops, slippage),
+    ]);
+    return {
+      leverage: Number(levereage),
+      liquidationPrice: Number(liquidationPrice),
+      maxLeverage: Number(maxLeverage),
+    };
+  }
+
+  async function updateEstimate(loops, slippage) {
+    const { leverage, liquidationPrice, maxLeverage } = await getEstimate(
+      loops,
+      slippage
+    );
+
+    estimate.leverage = leverage / 1e18;
+    estimate.liquidationPrice = liquidationPrice / 1e2;
+    estimate.maxLeverage = maxLeverage / 1e18;
+  }
+
   if (account.value) {
-    initialise();
+    login();
   }
 
   return {
@@ -225,6 +280,7 @@ export function useRoboVault({ toast }) {
     // user
     account,
     stats,
+    estimate,
 
     // inputs
     loops,
@@ -237,6 +293,7 @@ export function useRoboVault({ toast }) {
     open,
     close,
     deposit,
+    getEstimate,
     // withdraw
   };
 }
