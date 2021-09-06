@@ -9,6 +9,7 @@ import { ethers, Contract } from "ethers";
 
 import { useAccount } from "./hooks/account";
 import { useLeverage } from "./hooks/leverage";
+import { usePosition } from "./hooks/position";
 
 const { connect, connected, disconnect, account, getProvider, getSigner } =
   useAccount();
@@ -21,12 +22,14 @@ const { initialisePosition, getPositionAddress, positionAddress } = useLeverage(
   }
 );
 
+const { openLong } = usePosition({ positionAddress, getProvider, getSigner });
+
 const swapTolerance = ref(
   JSON.parse(localStorage.getItem("user-picked-swap-tolerance") ?? "1")
 );
 const leverageLoops = ref(1);
 const usdcBalance = ref(0);
-const tokenAmount = ref(0);
+const tokenAmount = ref(0.01);
 
 async function logout() {
   disconnect();
@@ -52,6 +55,12 @@ async function initialise() {
   }
 }
 
+async function deposit() {
+  console.log({ amt: tokenAmount.value, loops: leverageLoops.value });
+  const resp = await openLong(tokenAmount.value, leverageLoops.value);
+  console.log(resp);
+}
+
 if (account.value) {
   initialise();
 }
@@ -70,8 +79,11 @@ if (account.value) {
       <template v-if="positionAddress">
         <p class="my-4">Position: {{ positionAddress }}</p>
         <input v-model="tokenAmount" class="w-full p-2 rounded bg-purp-mid" />
-        <button class="bg-purple-500 px-4 py-2 mt-6 rounded-full">
-          Deposit
+        <button
+          class="bg-purple-500 px-4 py-2 mt-6 rounded-full"
+          @click="deposit"
+        >
+          Open Long
         </button>
       </template>
       <template v-else>
