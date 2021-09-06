@@ -10,7 +10,6 @@ const emits = defineEmits(["update:modelValue"]);
 function set(number) {
   localStorage.setItem("user-picked-leverage-loops", number);
   emits("update:modelValue", number);
-  console.log("update", number);
 }
 </script>
 

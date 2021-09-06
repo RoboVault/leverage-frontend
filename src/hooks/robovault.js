@@ -154,7 +154,6 @@ export function useRoboVault({ toast }) {
   }
 
   async function deposit() {
-    console.log("boop");
     try {
       const tx = await depositCollateral(tokenAmount.value);
       console.log({ tx });
