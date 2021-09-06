@@ -1,10 +1,16 @@
 <script setup>
 import { ref } from "@vue/reactivity";
 
-const offset = ref(1);
+const props = defineProps({
+  modelValue: String | Number,
+});
+
+const emits = defineEmits(["update:modelValue"]);
 
 function set(number) {
-  offset.value = number;
+  localStorage.setItem("user-picked-leverage-loops", number);
+  emits("update:modelValue", number);
+  console.log("update", number);
 }
 </script>
 
@@ -16,7 +22,7 @@ function set(number) {
         <li
           v-for="num in 10"
           :key="num"
-          :class="offset === num ? 'text-purple-500' : ''"
+          :class="props.modelValue === num ? 'text-purple-500' : ''"
         >
           <button @click="set(num)">{{ num }}x</button>
         </li>
@@ -33,7 +39,11 @@ function set(number) {
             transition
             duration-500
           "
-          :style="[`--tw-translate-x: -${100 - (offset - 1) * (100 / 9)}%;`]"
+          :style="[
+            `--tw-translate-x: -${
+              100 - (Number(props.modelValue) - 1) * (100 / 9)
+            }%;`,
+          ]"
         />
       </div>
     </div>
