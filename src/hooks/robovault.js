@@ -78,7 +78,7 @@ export function useRoboVault({ toast }) {
     loops.value = 1;
     tokenAmount.value = 0;
     clearStats();
-    toast.success("Disconnected");
+    toast.info("Disconnected");
   }
 
   async function login() {
@@ -86,9 +86,9 @@ export function useRoboVault({ toast }) {
     try {
       await getPositionAddress();
       await beginStatsInterval();
-      toast.success("Position Restored");
+      toast.info("Position Restored");
     } catch {
-      toast.success("Connected");
+      toast.info("Connected");
     }
   }
   async function initialise() {
@@ -144,24 +144,45 @@ export function useRoboVault({ toast }) {
     stats.usdcBalance = null;
   }
   async function open() {
-    const tx = await openLong(tokenAmount.value, loops.value, slippage.value);
-    console.log({ tx });
-    const { dismiss } = toast.success("Opening Position");
-    const resp = await tx.wait();
-    console.log({ resp });
-    dismiss();
-    toast.success("Position Opened");
+    try {
+      const tx = await openLong(tokenAmount.value, loops.value, slippage.value);
+      console.log({ tx });
+      const { dismiss } = toast.success("Opening Position", {
+        onClick() {
+          window.open(`https://ftmscan.com/tx/${tx.hash}`, "_blank").focus();
+        },
+      });
+      const resp = await tx.wait();
+      console.log({ resp });
+      dismiss();
+      toast.success("Position Opened", {
+        onClick() {
+          window.open(`https://ftmscan.com/tx/${tx.hash}`, "_blank").focus();
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to open position");
+    }
   }
 
   async function deposit() {
     try {
       const tx = await depositCollateral(tokenAmount.value);
       console.log({ tx });
-      const { dismiss } = toast.success("Deposition Collateral");
+      const { dismiss } = toast.success("Deposition Collateral", {
+        onClick() {
+          window.open(`https://ftmscan.com/tx/${tx.hash}`, "_blank").focus();
+        },
+      });
       const resp = tx.wait();
       console.log({ resp });
       dismiss();
-      toast.success(`Collateral Deposited $${tokenAmount.value}`);
+      toast.success(`Collateral Deposited $${tokenAmount.value}`, {
+        onClick() {
+          window.open(`https://ftmscan.com/tx/${tx.hash}`, "_blank").focus();
+        },
+      });
     } catch (err) {
       console.error(err);
       toast.error("Could not Deposit Collateral");
@@ -171,11 +192,19 @@ export function useRoboVault({ toast }) {
     try {
       const ts = await closeLong(slippage.value, loops.value);
       console.log({ tx });
-      const { dismiss } = toast.success("Closing Position");
+      const { dismiss } = toast.success("Closing Position", {
+        onClick() {
+          window.open(`https://ftmscan.com/tx/${tx.hash}`, "_blank").focus();
+        },
+      });
       const resp = tx.wait();
       console.log({ resp });
       dismiss();
-      toast.success("Position Closed");
+      toast.success("Position Closed", {
+        onClick() {
+          window.open(`https://ftmscan.com/tx/${tx.hash}`, "_blank").focus();
+        },
+      });
     } catch (err) {
       console.error(err);
       toast.error("Could not close position");
@@ -183,7 +212,7 @@ export function useRoboVault({ toast }) {
   }
 
   if (account.value) {
-    initialise().then(() => toast.success("Position Restored"));
+    initialise();
   }
 
   return {
