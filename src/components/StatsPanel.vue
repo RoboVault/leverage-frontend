@@ -10,10 +10,6 @@ const props = defineProps({
 <template>
   <ul class="pt-4 flex flex-col gap-4" v-if="position">
     <li class="flex justify-between">
-      <div>Expected MIM amount</div>
-      <div>~ 0.0000</div>
-    </li>
-    <li class="flex justify-between">
       <div>Expected APY</div>
       <div>~ 0.00%</div>
     </li>

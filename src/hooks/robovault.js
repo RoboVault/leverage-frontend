@@ -23,6 +23,7 @@ export function useRoboVault({ toast }) {
       leverage: null,
       liquidationPrice: null,
       usdcBalance: null,
+      open: null,
     }
   );
 
@@ -78,6 +79,7 @@ export function useRoboVault({ toast }) {
     valueInBase,
     valueInQuote,
     depositCollateral,
+    isOpen,
   } = usePosition({
     positionAddress,
     getProvider,
@@ -121,7 +123,13 @@ export function useRoboVault({ toast }) {
       await initialisePosition();
       await getPositionAddress();
     }
+    
     beginStatsInterval();
+  }
+
+  function toNumber(num, decimals = 0) {
+    const scale = Math.pow(10, decimals)
+    return parseFloat(num.toString()) / scale
   }
 
   function beginStatsInterval() {
@@ -131,28 +139,47 @@ export function useRoboVault({ toast }) {
   }
 
   async function getStats() {
-    const [
-      { leverage: _leverage, liquidationPrice },
-      leverage,
-      collateral,
-      profit,
-      price,
-      usdcBalance,
-    ] = await Promise.all([
-      getPositionInfo(),
-      getLeverage(),
-      getCollateral(),
-      getProfit(),
-      getPrice(),
-      getUsdcBalance(),
-    ]);
+    stats.open = await isOpen()
+    if (stats.open) {
+      const [
+        { leverage: _leverage, liquidationPrice },
+        leverage,
+        collateral,
+        profit,
+        price,
+        usdcBalance,
+      ] = await Promise.all([
+        getPositionInfo(),
+        getLeverage(),
+        getCollateral(),
+        getProfit(),
+        getPrice(),
+        getUsdcBalance(),
+      ]);
+      stats.collateral = collateral / 1e6;
+      stats.profit = Number(profit) / 1e6;
+      stats.price = Number(price) / 1e6;
+      stats.leverage = Number(leverage) / 1e18;
+      stats.liquidationPrice = Number(liquidationPrice) / 1e2;
+      stats.usdcBalance = Number(usdcBalance) / 1e6;
+    } else {
+      collatRatio.value = 60 // TODO - Set in UI. Max is 70%
+      const [
+        { levereage, liquidationPrice },
+        price,
+        usdcBalance,
+      ] = await Promise.all([
+        getPositionInfo(loops.value, slippage.value, collatRatio.value),
+        getPrice(),
+        getUsdcBalance(),
+      ]);
 
-    stats.collateral = collateral / 1e6;
-    stats.profit = Number(profit) / 1e6;
-    stats.price = Number(price) / 1e6;
-    stats.leverage = Number(leverage) / 1e18;
-    stats.liquidationPrice = Number(liquidationPrice) / 1e2;
-    stats.usdcBalance = Number(usdcBalance) / 1e6;
+      stats.leverage = Number(levereage) / 1e18;
+      stats.liquidationPrice = Number(liquidationPrice) / 1e18;
+      stats.price = Number(price) / 1e6;
+      stats.usdcBalance = Number(usdcBalance) / 1e6;
+    }
+    console.log('getStats')
     console.log({ ...stats });
   }
 
@@ -244,18 +271,20 @@ export function useRoboVault({ toast }) {
   }
 
   async function getEstimate(loops, slippage) {
+    collatRatio.value = 50
     const [{ levereage, liquidationPrice }, maxLeverage] = await Promise.all([
-      getPositionInfo(loops, slippage),
+      getPositionInfo(loops, slippage, collatRatio.value),
       maxLeverageWithLoops(loops, slippage),
     ]);
     return {
-      leverage: Number(levereage),
-      liquidationPrice: Number(liquidationPrice),
+      leverage: Number(levereage) / 1e18,
+      liquidationPrice: Number(liquidationPrice)  / 1e18,
       maxLeverage: Number(maxLeverage),
     };
   }
 
   async function updateEstimate(loops, slippage) {
+    console.log(loops, slippage)
     const { leverage, liquidationPrice, maxLeverage } = await getEstimate(
       loops,
       slippage
