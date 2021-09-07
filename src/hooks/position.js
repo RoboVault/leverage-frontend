@@ -59,9 +59,6 @@ export function usePosition({
       (slippage.value * 10 ** 16).toString()
     );
   }
-  function isOpen() {
-    return getPositionContract().isOpen()
-  }
 
   return {
     openLong,
@@ -73,6 +70,5 @@ export function usePosition({
     valueInBase,
     valueInQuote,
     depositCollateral,
-    isOpen,
   };
 }

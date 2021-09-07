@@ -46,13 +46,11 @@ export function useLeverage({
     setPositionAddress(addr);
   }
 
-  function getPositionInfo(_loops = null, slippage = null, collat = null) {
-    const _slippage = ethers.utils.parseEther(((slippage ?? slippage.value) / 100).toString())
-    const _collatRatio = ethers.utils.parseEther(((collat ?? collat.value) / 100).toString())
+  function getPositionInfo(_loops = null, _slippage = null) {
     return getLeveragerContract().getPositionInfo(
       _loops ?? loops.value,
-      _slippage,
-      _collatRatio
+      _slippage ?? slippage.value,
+      collatRatio.value
     );
   }
 
@@ -66,6 +64,7 @@ export function useLeverage({
     setPositionAddress,
     getPositionInfo,
     positionAddress,
+    getPositionInfo,
     maxLeverageWithLoops,
   };
 }
